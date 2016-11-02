@@ -1,0 +1,106 @@
+# Tutorial
+
+In this tutorial, we'll query the list of widgets from a PostgreSQL database with Sequelize as ORM and display it on the view using Relay and GraphQL.
+
+**End goal**: Connect to an external database, query the list of widgets and display them.
+
+We'll break this tutorial into 5 parts.
+1. Set up Relay Starter kit
+2. Set up postgres and sequelize
+3. Set up the database and model
+4. Write a query which will fetch the list of widgets
+5. Wrapping up
+
+Since the end goal of this tutorial is to connect with an external database, we'll focus only on that. We'll use the [Relay starter kit](https://github.com/relayjs/relay-starter-kit) as a starting point. It contains the bare-bones structure to get the list of widgets from a mock database. 
+
+If you're not familiar with how the Relay Starter kit works, [this tutorial](https://www.sitepoint.com/getting-started-with-react-graphql-and-relay-part-1-of-2/) would be a good starting point.
+
+### Set up Relay Starter Kit
+
+Clone the [Relay Starter Kit](https://github.com/relayjs/relay-starter-kit)
+
+```git clone https://github.com/relayjs/relay-starter-kit.git widgets-list```
+
+```npm install```
+
+### Set up postgres and Sequelize
+
+```sudo apt-get update```
+
+```sudo apt-get install postgresql postgresql-contrib```
+
+Once you install this, a user with postgres as username can be seen to be present by default. You can [change the password] (http://stackoverflow.com/questions/12720967/how-to-change-postgresql-user-password) if you want.
+
+To confirm you have postgres installed, type 
+
+```sudo -i -u postgres```
+
+If it works, exit from that and move on.
+
+We'll use Sequelize relay which is a wrapper around Sequelize and provides helper functions for Relay.
+
+```npm i -S sequelize sequelize-relay```
+
+### Set up the database and model
+
+Log onto your postgres account on the server.
+
+```sudo -i -u postgres```
+
+Create a database called 'widgets'
+
+```createdb widgets```
+
+Now lets create the 'widget' model in our database. 
+
+Before we write the model, lets install 'lodash' for helper functions and 'Faker' for inserting sample data into the database.
+
+```npm i -S faker lodash```
+
+Our Database model file:
+
+{%ace edit=false, lang='javascript'%}
+
+// imports
+import Sequelize from 'sequelize';
+
+import _ from 'lodash';
+import Faker from 'faker';
+
+// Initialize a Sequelize connection with the following params. 
+const Conn = new Sequelize(
+	'widgets', // Name of the database
+	'postgres', // Name of the user under which this db is to be created
+	'postgres', // Password of the user
+	{
+		dialect: 'postgres',
+		host: 'localhost'
+	}
+);
+
+// Here's the definition of the 'widget' model
+const Widget = Conn.define('widget',{
+    // It contains only a single field, 'name'
+	name: {
+		type: Sequelize.STRING,
+		allowNull: false
+	}
+}); 
+
+Conn.sync({
+    /* When kept to true, the existing database will be dropped
+    and a new table will be created
+    */ 
+	force: false
+}).then(()=> {
+    // Inserting some sample data into the database
+	_.times(10, ()=>{
+		return Widget.create({
+			name: Faker.name.firstName()
+		})
+	})
+});
+
+export default Conn; 
+
+{%endace%}

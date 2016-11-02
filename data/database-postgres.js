@@ -20,6 +20,12 @@ const Widget = Conn.define('widget',{
 	}
 }); 
 
+const addWidget = function(name) {
+	return Widget.create({
+		name: name
+	})
+}
+
 Conn.sync({
 	force: false
 }).then(()=> {
@@ -30,4 +36,7 @@ Conn.sync({
 	})
 });
 
-export default Conn; 
+export {
+	Conn,
+	addWidget
+}; 

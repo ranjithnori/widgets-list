@@ -22,7 +22,9 @@ import {
 import {
   connectionArgs,
   connectionDefinitions,
+  connectionFromArray,
   connectionFromPromisedArray,
+  cursorForObjectInConnection,
   fromGlobalId,
   globalIdField,
   mutationWithClientMutationId,
@@ -33,6 +35,7 @@ import {
   // Import methods that your schema can use to interact with your database
   User,
   Widget,
+  addWidget,
   getUser,
   getViewer,
   getWidget,
@@ -102,7 +105,7 @@ var widgetType = new GraphQLObjectType({
 /**
  * Define your own connection types here
  */
-var {connectionType: widgetConnection} =
+var {connectionType: widgetConnection,edgeType: GraphQLWidgetEdge} =
   connectionDefinitions({name: 'Widget', nodeType: widgetType});
 
 /**
@@ -125,10 +128,42 @@ var queryType = new GraphQLObjectType({
  * This is the type that will be the root of our mutations,
  * and the entry point into performing writes in our schema.
  */
+
+const GraphQLAddWidgetMutation = mutationWithClientMutationId({
+  name: 'AddWidget',
+  inputFields: {
+    name: { type: new GraphQLNonNull(GraphQLString) }
+  },
+  outputFields: {
+    widgetEdge: {
+      type: GraphQLWidgetEdge,
+      resolve: ({localWidgetId}) => {
+        const widget = getWidget(localWidgetId);
+        console.log('resolve', widget);
+        return {
+          cursor: cursorForObjectInConnection(getWidgets(), widget),
+          node: widget,
+        };
+      },
+    },
+    viewer: {
+      type: userType,
+      resolve: () => getViewer(),
+    },
+  },
+  mutateAndGetPayload: ({name}) => {
+
+    const localWidgetId = addWidget(name);
+    console.log('addWidget', localWidgetId);
+    return {localWidgetId};
+  },
+});
+
 var mutationType = new GraphQLObjectType({
   name: 'Mutation',
   fields: () => ({
     // Add your own mutations here
+    addWidget: GraphQLAddWidgetMutation
   })
 });
 
@@ -139,5 +174,5 @@ var mutationType = new GraphQLObjectType({
 export var Schema = new GraphQLSchema({
   query: queryType,
   // Uncomment the following after adding some mutation fields:
-  // mutation: mutationType
+  mutation: mutationType
 });
